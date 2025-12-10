@@ -38,50 +38,38 @@
     <section class="block">
         <h2>③ マッチング設定</h2>
 
-        <label>距離しきい値（m）</label>
-        <input type="number" id="distInput" value="20" />
+        <!-- 距離しきい値（横並び） -->
+        <div class="inlineRow">
+            <label>距離しきい値（m）</label>
+            <input type="number" id="distInput" value="20" />
+            <label class="chkLabel">
+                <input type="checkbox" id="ignoreDistance"> 距離を無視する
+            </label>
+        </div>
 
-        <label>時間しきい値（秒）</label>
-        <input type="number" id="timeInput" value="300" />
-
-        <!-- ★ 必須：ignoreDistance / ignoreTime を追加 -->
-        <label><input type="checkbox" id="ignoreDistance"> 距離を無視する</label><br>
-        <label><input type="checkbox" id="ignoreTime"> 時間を無視する</label>
-        <!-- ★ ここまで -->
+        <!-- 時間しきい値（横並び） -->
+        <div class="inlineRow">
+            <label>時間しきい値（秒）</label>
+            <input type="number" id="timeInput" value="300" />
+            <label class="chkLabel">
+                <input type="checkbox" id="ignoreTime"> 時間を無視する
+            </label>
+        </div>
 
         <fieldset class="modeBox">
             <legend>判定方式</legend>
-
-            <label>
-                <input type="radio" name="matchMode" value="OR" checked>
-                OR（距離 or 時間）
-            </label><br>
-
-            <label>
-                <input type="radio" name="matchMode" value="AND">
-                AND（距離 and 時間）
-            </label>
+            <label><input type="radio" name="matchMode" value="OR" checked> OR（距離 or 時間）</label><br>
+            <label><input type="radio" name="matchMode" value="AND"> AND（距離 and 時間）</label>
         </fieldset>
 
         <h3>期間指定</h3>
+        <label>開始日</label><input type="date" id="startDate" />
+        <label>時</label><input type="number" id="startHour" value="00" min="00" max="23" />
+        <label>分</label><input type="number" id="startMin" value="00" min="00" max="59" />
 
-        <label>開始日</label>
-        <input type="date" id="startDate" />
-
-        <label>時</label>
-        <input type="number" id="startHour" value="00" min="00" max="23" />
-
-        <label>分</label>
-        <input type="number" id="startMin" value="00" min="00" max="59" />
-
-        <label>終了日</label>
-        <input type="date" id="endDate" />
-
-        <label>時</label>
-        <input type="number" id="endHour" value="23" min="00" max="23" />
-
-        <label>分</label>
-        <input type="number" id="endMin" value="59" min="00" max="59" />
+        <label>終了日</label><input type="date" id="endDate" />
+        <label>時</label><input type="number" id="endHour" value="23" min="00" max="23" />
+        <label>分</label><input type="number" id="endMin" value="59" min="00" max="59" />
 
     </section>
 
@@ -97,11 +85,7 @@
          =============================== -->
     <section class="block">
         <h2>④ 出力</h2>
-
-        <a id="downloadLink" class="downloadLink"
-           href="#"
-           download="matched.csv"
-           style="display:none;">
+        <a id="downloadLink" class="downloadLink" href="#" download="matched.csv" style="display:none;">
             👉 CSVをダウンロード
         </a>
     </section>

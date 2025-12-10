@@ -2,23 +2,14 @@
 // 05_PictureMemoMuchForWeb 用フロントロジック
 // 移植元 05_PictureMemoMuch_251208.py と同一ロジック（Exif→Memo / Memo→Exif 両方）
 //
-// 想定HTML側ID：
-//  #exifFile        : Exif CSV ファイル input(type="file")
-//  #memoFile        : メモTXT ファイル input(type="file")
-//  #distInput       : 距離しきい値(m) input(text)
-//  #timeInput       : 時間しきい値(秒) input(text)
-//  #ignoreDistance  : 距離を無視 checkbox
-//  #ignoreTime      : 時間を無視 checkbox
-//  name="matchMode" : AND/OR ラジオボタン (value="AND" or "OR")
-//  #startDate       : 開始日 input(type="date")
-//  #startHour       : 開始時 input(text or select, "00"〜"23")
-//  #startMin        : 開始分 input(text or select, "00"〜"59")
-//  #endDate         : 終了日 input(type="date")
-//  #endHour         : 終了時
-//  #endMin          : 終了分
-//  #runButton       : 実行ボタン
-//  #status          : 処理状況表示用 <div>
-//  #downloadLink    : 出力CSVダウンロードリンク <a>
+// HTML側ID：
+//  #exifFile, #memoFile
+//  #distInput, #timeInput
+//  #ignoreDistance, #ignoreTime
+//  name="matchMode"
+//  #startDate, #startHour, #startMin
+//  #endDate, #endHour, #endMin
+//  #runButton, #status, #downloadLink
 
 (function () {
   // ============================================================
@@ -34,7 +25,7 @@
   }
 
   // ============================================================
-  // ファイル読み込み（Promise で text を返す）
+  // ファイル読み込み
   // ============================================================
   function readFileAsText(file) {
     return new Promise((resolve, reject) => {
@@ -49,7 +40,6 @@
   // CSV パース / 文字列化
   // ============================================================
   function parseCsv(text) {
-    // シンプルな CSV パーサ（カンマ区切り・ダブルクォート対応）
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
     if (lines.length === 0) return { header: [], rows: [] };
 
@@ -78,7 +68,6 @@
       if (inQuotes) {
         if (ch === '"') {
           if (i + 1 < line.length && line[i + 1] === '"') {
-            // エスケープされたダブルクォート
             cur += '"';
             i++;
           } else {
@@ -116,9 +105,7 @@
     return cols
       .map((v) => {
         const s = String(v ?? "");
-        if (/[",\r\n]/.test(s)) {
-          return `"${s.replace(/"/g, '""')}"`;
-        }
+        if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
         return s;
       })
       .join(",");
@@ -128,9 +115,7 @@
   // 日付/時刻処理
   // ============================================================
   function parseDateTime(str) {
-    // "YYYY-MM-DD HH:MM:SS"
     if (!str) return null;
-    // Safari 等も考慮して手動パース
     const m = str.match(
       /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/
     );
@@ -163,7 +148,7 @@
   }
 
   // ============================================================
-  // 距離計算（ハーバサイン）
+  // 距離計算
   // ============================================================
   function haversine(lat1, lon1, lat2, lon2) {
     const R = 6378137;
@@ -180,7 +165,6 @@
     return R * 2 * Math.asin(Math.sqrt(a));
   }
 
-  // GPS 妥当性チェック
   function gpsValid(lat, lng) {
     try {
       lat = parseFloat(lat);
@@ -194,11 +178,8 @@
     return true;
   }
 
-  // 緯度・経度を小数第?位で丸めたい場合に使うならここだが、
-  // 本ツールでは入力 CSV の値をそのまま使う（Python 版と同じ前提）。
-
   // ============================================================
-  // メモTXT 読み込み (load_memo_txt と同等)
+  // メモTXT 読み込み
   // ============================================================
   function parseMemoTxt(text) {
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
@@ -206,6 +187,7 @@
     for (const rawLine of lines) {
       const line = rawLine.trim();
       if (!line) continue;
+
       try {
         const idx = line.indexOf(" - ");
         if (idx === -1) continue;
@@ -236,14 +218,10 @@
           piece = piece.trim();
           if (piece.startsWith("lat:")) {
             const v = piece.substring(4).trim();
-            if (v && v.toLowerCase() !== "null") {
-              latVal = parseFloat(v);
-            }
+            if (v && v.toLowerCase() !== "null") latVal = parseFloat(v);
           } else if (piece.startsWith("lng:")) {
             const v = piece.substring(4).trim();
-            if (v && v.toLowerCase() !== "null") {
-              lngVal = parseFloat(v);
-            }
+            if (v && v.toLowerCase() !== "null") lngVal = parseFloat(v);
           }
         }
 
@@ -256,15 +234,13 @@
           lng: lngVal,
           text: textPart,
         });
-      } catch (e) {
-        // 1行失敗は無視
-      }
+      } catch (e) {}
     }
     return entries;
   }
 
   // ============================================================
-  // メイン照合ロジック（match_and_fill と同等）
+  // マッチング処理
   // ============================================================
   function matchAndFillJs(
     exifHeader,
@@ -274,11 +250,10 @@
     timeThresholdSec,
     ignoreDistance,
     ignoreTime,
-    matchMode, // "AND" or "OR"
+    matchMode,
     startDt,
     endDt
   ) {
-    // 必須列確認
     const requiredCols = [
       "FileName",
       "DayTime",
@@ -303,7 +278,6 @@
       throw new Error("メモTXTに有効なデータがありません。");
     }
 
-    // Exif DayTime を Date 化
     const exifTimes = exifRows.map((row) => parseDateTime(row["DayTime"]));
     let matchedExifCount = 0;
     let memoMatchedCount = 0;
@@ -311,9 +285,7 @@
     let exifSeq = 1;
     let memoSeq = 1;
 
-    // ==========================================================
-    // 1) Exif → Memo
-    // ==========================================================
+    // ------------ Exif → Memo ------------
     for (let i = 0; i < exifRows.length; i++) {
       const row = exifRows[i];
       const exifTime = exifTimes[i];
@@ -335,7 +307,6 @@
           continue;
         }
 
-        // ---- 時間判定 ----
         let timeOk = true;
         if (!ignoreTime) {
           const deltaSec = Math.abs(
@@ -344,12 +315,11 @@
           timeOk = deltaSec <= timeThresholdSec;
         }
 
-        // ---- 距離判定 ----
         let distanceChecked = false;
         let distanceOk = false;
 
         if (!ignoreDistance) {
-          if (gpsExif && gpsValid(memo.lat, memo.lng)) {
+          if (gpsValid(exifLat, exifLng) && gpsValid(memo.lat, memo.lng)) {
             const dist = haversine(
               parseFloat(exifLat),
               parseFloat(exifLng),
@@ -359,27 +329,22 @@
             distanceOk = dist <= distThresholdM;
             distanceChecked = true;
           } else {
-            // GPS欠損 → 距離評価不可
             distanceOk = false;
             distanceChecked = false;
           }
         } else {
-          // 距離無視
           distanceOk = false;
           distanceChecked = false;
         }
 
-        // ---- AND / OR ----
         let isMatch;
         if (matchMode === "AND") {
           if (distanceChecked) {
             isMatch = distanceOk && timeOk;
           } else {
-            // 距離評価できない場合は時間のみ
             isMatch = timeOk;
           }
         } else {
-          // "OR"
           if (distanceChecked) {
             isMatch = distanceOk || timeOk;
           } else {
@@ -397,19 +362,15 @@
         curMseq += 1;
       }
 
-      // flg
       const flg = matchedTexts.length > 0 ? "1" : "0";
 
-      // FileName = 実ファイル名 + "-" + FLG（拡張子は残す）
       const origFname = row["FileName"];
       row["FileName"] = `${origFname}-${flg}`;
 
       exifSeq++;
 
-      // Memo 本文へ (SEQ) を付ける
       if (matchedTexts.length > 0) {
         const seqPart = matchedMemoSeq.join("/");
-
         const bodyList = [];
         for (let k = 0; k < matchedTexts.length; k++) {
           const s = matchedMemoSeq[k];
@@ -425,13 +386,12 @@
       }
     }
 
-    // ==========================================================
-    // 2) Memo → Exif（メモ行生成）
-    // ==========================================================
+    // ------------ Memo → Exif（メモ行生成） ------------
     const memoRows = [];
 
     for (const memo of memoEntries) {
       const memoTime = memo.time;
+
       if (memoTime < startDt || memoTime > endDt) {
         memoSeq += 1;
         continue;
@@ -446,7 +406,6 @@
         if (!exifTime) continue;
         if (exifTime < startDt || exifTime > endDt) continue;
 
-        // ---- 時間 ----
         let timeOk = true;
         if (!ignoreTime) {
           const deltaSec = Math.abs(
@@ -455,7 +414,6 @@
           timeOk = deltaSec <= timeThresholdSec;
         }
 
-        // ---- 距離 ----
         const exifLat = row["Latitude"];
         const exifLng = row["Longitude"];
 
@@ -481,7 +439,6 @@
           distanceChecked = false;
         }
 
-        // ---- AND / OR ----
         let isMatch;
         if (matchMode === "AND") {
           if (distanceChecked) {
@@ -532,9 +489,6 @@
       memoSeq += 1;
     }
 
-    // ==========================================================
-    // 結合 → DayTime でソート
-    // ==========================================================
     const allRows = exifRows.concat(memoRows);
 
     allRows.sort((a, b) => {
@@ -557,7 +511,7 @@
   }
 
   // ============================================================
-  // メイン実行ハンドラ
+  // 実行ボタン処理
   // ============================================================
   async function onRun() {
     try {
@@ -589,7 +543,6 @@
       const exifCsv = parseCsv(exifText);
       const memoEntries = parseMemoTxt(memoText);
 
-      // パラメータ取得
       const distStr = $("distInput").value.trim();
       const timeStr = $("timeInput").value.trim();
 
@@ -606,8 +559,7 @@
       const matchModeInput = document.querySelector('input[name="matchMode"]:checked');
       const matchMode = matchModeInput ? matchModeInput.value : "OR";
 
-      // 期間
-      const sdStr = $("startDate").value; // "YYYY-MM-DD"
+      const sdStr = $("startDate").value;
       const edStr = $("endDate").value;
       const shStr = $("startHour").value || "00";
       const smStr = $("startMin").value || "00";
@@ -646,7 +598,6 @@
         endDt
       );
 
-      // 出力ファイル名生成（元の Exif CSV 名ベース）
       const baseName = (exifFile.name || "exif_export").replace(/\.csv$/i, "");
       const pad2 = (n) => (n < 10 ? "0" + n : "" + n);
 
@@ -702,9 +653,49 @@
   }
 
   // ============================================================
-  // イベント登録
+  // イベント登録（メモTXT 選択時に日付自動設定を追加）
   // ============================================================
   window.addEventListener("DOMContentLoaded", () => {
+
+    // ▼▼▼ ここが今回の追加部分 ▼▼▼
+    const memoInput = $("memoFile");
+    if (memoInput) {
+      memoInput.addEventListener("change", () => {
+        const file = memoInput.files[0];
+        if (!file) return;
+
+        const fname = file.name;
+
+        // 年：先頭4桁
+        const year = fname.substring(0, 4);
+
+        // アンダーバー以降「12月9日」等
+        const idx = fname.indexOf("_");
+        if (idx === -1) return;
+
+        const tail = fname.substring(idx + 1);
+
+        // 「12月9日」形式から月日抽出
+        const m = tail.match(/(\d{1,2})月(\d{1,2})日/);
+        if (!m) return;
+
+        const MM = m[1].padStart(2, "0");
+        const DD = m[2].padStart(2, "0");
+
+        const dateStr = `${year}-${MM}-${DD}`;
+
+        $("startDate").value = dateStr;
+        $("endDate").value = dateStr;
+
+        $("startHour").value = "00";
+        $("startMin").value = "00";
+        $("endHour").value = "23";
+        $("endMin").value = "59";
+      });
+    }
+    // ▲▲▲ 追加終わり ▲▲▲
+
+    // 実行ボタン
     const btn = $("runButton");
     if (btn) {
       btn.addEventListener("click", (e) => {
