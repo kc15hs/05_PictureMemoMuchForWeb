@@ -18,7 +18,6 @@
          =============================== -->
     <section class="block">
         <h2>① 写真CSVファイルを選択</h2>
-
         <input type="file" id="exifFile" accept=".csv" />
         <p id="status" class="status">未選択</p>
     </section>
@@ -28,7 +27,6 @@
          =============================== -->
     <section class="block">
         <h2>② メモTXTファイルを選択</h2>
-
         <input type="file" id="memoFile" accept=".txt" />
     </section>
 
@@ -38,38 +36,103 @@
     <section class="block">
         <h2>③ マッチング設定</h2>
 
-        <!-- 距離しきい値（横並び） -->
+        <!-- 距離しきい値（半分幅 + 横並び + 「距離を無視」） -->
         <div class="inlineRow">
             <label>距離しきい値（m）</label>
-            <input type="number" id="distInput" value="20" />
+            <input type="number" id="distInput" class="halfInput" value="20" />
             <label class="chkLabel">
-                <input type="checkbox" id="ignoreDistance"> 距離を無視する
+                <input type="checkbox" id="ignoreDistance"> 距離を無視
             </label>
         </div>
 
-        <!-- 時間しきい値（横並び） -->
+        <!-- 時間しきい値（半分幅 + 横並び + 「時間を無視」） -->
         <div class="inlineRow">
             <label>時間しきい値（秒）</label>
-            <input type="number" id="timeInput" value="300" />
+            <input type="number" id="timeInput" class="halfInput" value="300" />
             <label class="chkLabel">
-                <input type="checkbox" id="ignoreTime"> 時間を無視する
+                <input type="checkbox" id="ignoreTime"> 時間を無視
             </label>
         </div>
 
         <fieldset class="modeBox">
             <legend>判定方式</legend>
-            <label><input type="radio" name="matchMode" value="OR" checked> OR（距離 or 時間）</label><br>
+            <label><input type="radio" name="matchMode" value="OR" checked> OR（距離 or 時間）</label>
             <label><input type="radio" name="matchMode" value="AND"> AND（距離 and 時間）</label>
         </fieldset>
 
+        <!-- ===============================
+             期間指定（開始/終了を2行構成）
+             =============================== -->
         <h3>期間指定</h3>
-        <label>開始日</label><input type="date" id="startDate" />
-        <label>時</label><input type="number" id="startHour" value="00" min="00" max="23" />
-        <label>分</label><input type="number" id="startMin" value="00" min="00" max="59" />
 
-        <label>終了日</label><input type="date" id="endDate" />
-        <label>時</label><input type="number" id="endHour" value="23" min="00" max="23" />
-        <label>分</label><input type="number" id="endMin" value="59" min="00" max="59" />
+        <!-- 開始行 -->
+        <div class="dateRow">
+            <span class="dateLabel">開始</span>
+            <input type="date" id="startDate" class="dateInput" />
+
+            <!-- 時 select -->
+            <select id="startHour" class="timeSel">
+                <!-- 自動生成ではなくHTMLに全て書く（信頼性重視） -->
+                <option>00</option><option>01</option><option>02</option><option>03</option>
+                <option>04</option><option>05</option><option>06</option><option>07</option>
+                <option>08</option><option>09</option><option>10</option><option>11</option>
+                <option>12</option><option>13</option><option>14</option><option>15</option>
+                <option>16</option><option>17</option><option>18</option><option>19</option>
+                <option>20</option><option>21</option><option>22</option><option>23</option>
+            </select>
+
+            <!-- 分 select -->
+            <select id="startMin" class="timeSel">
+                <option>00</option><option>01</option><option>02</option><option>03</option>
+                <option>04</option><option>05</option><option>06</option><option>07</option>
+                <option>08</option><option>09</option><option>10</option><option>11</option>
+                <option>12</option><option>13</option><option>14</option><option>15</option>
+                <option>16</option><option>17</option><option>18</option><option>19</option>
+                <option>20</option><option>21</option><option>22</option><option>23</option>
+                <option>24</option><option>25</option><option>26</option><option>27</option>
+                <option>28</option><option>29</option><option>30</option><option>31</option>
+                <option>32</option><option>33</option><option>34</option><option>35</option>
+                <option>36</option><option>37</option><option>38</option><option>39</option>
+                <option>40</option><option>41</option><option>42</option><option>43</option>
+                <option>44</option><option>45</option><option>46</option><option>47</option>
+                <option>48</option><option>49</option><option>50</option><option>51</option>
+                <option>52</option><option>53</option><option>54</option><option>55</option>
+                <option>56</option><option>57</option><option>58</option><option>59</option>
+            </select>
+        </div>
+
+        <!-- 終了行 -->
+        <div class="dateRow">
+            <span class="dateLabel">終了</span>
+            <input type="date" id="endDate" class="dateInput" />
+
+            <select id="endHour" class="timeSel">
+                <option>00</option><option>01</option><option>02</option><option>03</option>
+                <option>04</option><option>05</option><option>06</option><option>07</option>
+                <option>08</option><option>09</option><option>10</option><option>11</option>
+                <option>12</option><option>13</option><option>14</option><option>15</option>
+                <option>16</option><option>17</option><option>18</option><option>19</option>
+                <option>20</option><option>21</option><option>22</option><option>23</option>
+            </select>
+
+            <select id="endMin" class="timeSel">
+                <option>00</option><option>01</option><option>02</option><option>03</option>
+                <option>04</option><option>05</option><option>06</option><option>07</option>
+                <option>08</option><option>09</option><option>10</option><option>11</option>
+                <option>12</option><option>13</option><option>14</option><option>15</option>
+                <option>16</option><option>17</option><option>18</option><option>19</option>
+                <option>20</option><option>21</option><option>22</option><option>23</option>
+                <option>24</option><option>25</option><option>26</option><option>27</option>
+                <option>28</option><option>29</option><option>30</option><option>31</option>
+                <option>32</option><option>33</option><option>34</option><option>35</option>
+                <option>36</option><option>37</option><option>38</option><option>39</option>
+                <option>40</option><option>41</option><option>42</option><option>43</option>
+                <option>44</option><option>45</option><option>46</option><option>47</option>
+                <option>48</option><option>49</option><option>50</option><option>51</option>
+                <option>52</option><option>53</option><option>54</option><option>55</option>
+                <option>56</option><option>57</option><option>58</option><option>59</option>
+            </select>
+        </div>
 
     </section>
 

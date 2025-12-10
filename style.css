@@ -1,50 +1,153 @@
+/* 全体 --------------------------------------------------- */
 body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    background: #f7f7f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 15px;
+    background: #fafafa;
+    color: #333;
+    line-height: 1.6;
 }
 
 h1 {
+    font-size: 1.6rem;
+    text-align: center;
     margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 1.2rem;
+    margin: 12px 0 6px;
 }
 
 .block {
-    background: white;
+    background: #fff;
     padding: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ファイル選択 --------------------------------------------------- */
+input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .status {
+    font-size: 0.9rem;
     color: #666;
+    margin-top: 5px;
 }
 
-/* 横並び（距離・時間のUI 修正ポイント） */
+/* 横並びレイアウト（距離・時間） -------------------------- */
 .inlineRow {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
+    margin-top: 10px;
 }
 
-.inlineRow label {
-    white-space: nowrap;
+.halfInput {
+    width: 45%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
 }
 
 .chkLabel {
     display: flex;
     align-items: center;
     gap: 4px;
+    white-space: nowrap;
 }
 
+/* ラジオボックス --------------------------------------------------- */
+.modeBox {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.modeBox legend {
+    font-size: 1rem;
+    padding: 0 5px;
+}
+
+.modeBox label {
+    display: block;
+    padding: 4px 0;
+}
+
+/* 日付 + 時刻（開始/終了） -------------------------------------- */
+.dateRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.dateLabel {
+    width: 42px;
+    font-size: 1rem;
+}
+
+.dateInput {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.timeSel {
+    padding: 8px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+/* 実行ボタン --------------------------------------------------- */
 .mainButton {
-    padding: 10px 20px;
-    font-size: 16px;
+    width: 100%;
+    padding: 15px;
+    background: #007bff;
+    color: white;
+    border: none;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    margin-top: 10px;
     cursor: pointer;
+    transition: 0.2s;
 }
 
+.mainButton:active {
+    background: #005fcc;
+}
+
+/* ダウンロードリンク --------------------------------------------------- */
 .downloadLink {
-    font-size: 18px;
-    color: blue;
+    font-size: 1.1rem;
+    background: #28a745;
+    color: white;
+    padding: 12px 14px;
+    display: inline-block;
+    border-radius: 10px;
+    text-decoration: none;
+}
+
+.downloadLink:active {
+    background: #1d7f34;
+}
+
+/* スマホ向け --------------------------------------------------- */
+@media (max-width: 480px) {
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.1rem; }
+
+    .halfInput { width: 50%; }
 }
