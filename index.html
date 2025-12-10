@@ -19,8 +19,9 @@
     <section class="block">
         <h2>① 写真CSVファイルを選択</h2>
 
-        <input type="file" id="csvInput" accept=".csv" />
-        <p id="csvStatus" class="status">未選択</p>
+        <!-- app.js が要求する ID に修正 -->
+        <input type="file" id="exifFile" accept=".csv" />
+        <p id="status" class="status">未選択</p>
     </section>
 
     <!-- ===============================
@@ -29,8 +30,8 @@
     <section class="block">
         <h2>② メモTXTファイルを選択</h2>
 
-        <input type="file" id="txtInput" accept=".txt" />
-        <p id="txtStatus" class="status">未選択</p>
+        <!-- app.js が要求する ID -->
+        <input type="file" id="memoFile" accept=".txt" />
     </section>
 
     <!-- ===============================
@@ -40,16 +41,27 @@
         <h2>③ マッチング設定</h2>
 
         <label>距離しきい値（m）</label>
-        <input type="number" id="distThreshold" value="20" />
+        <input type="number" id="distInput" value="20" />
 
         <label>時間しきい値（秒）</label>
-        <input type="number" id="timeThreshold" value="300" />
+        <input type="number" id="timeInput" value="300" />
 
         <fieldset class="modeBox">
             <legend>判定方式</legend>
-            <label><input type="radio" name="mode" value="OR" checked> OR（距離 or 時間）</label><br>
-            <label><input type="radio" name="mode" value="AND"> AND（距離 and 時間）</label>
+            <!-- app.js の matchMode に合わせる -->
+            <label><input type="radio" name="matchMode" value="OR" checked> OR（距離 or 時間）</label><br>
+            <label><input type="radio" name="matchMode" value="AND"> AND（距離 and 時間）</label>
         </fieldset>
+
+        <h3>期間指定</h3>
+        <label>開始日</label><input type="date" id="startDate" />
+        <label>時</label><input type="number" id="startHour" value="00" min="00" max="23" />
+        <label>分</label><input type="number" id="startMin" value="00" min="00" max="59" />
+
+        <label>終了日</label><input type="date" id="endDate" />
+        <label>時</label><input type="number" id="endHour" value="23" min="00" max="23" />
+        <label>分</label><input type="number" id="endMin" value="59" min="00" max="59" />
+
     </section>
 
     <!-- ===============================
@@ -57,7 +69,6 @@
          =============================== -->
     <section class="block">
         <button id="runButton" class="mainButton">マッチングを実行</button>
-        <p id="runStatus" class="runStatus"></p>
     </section>
 
     <!-- ===============================
