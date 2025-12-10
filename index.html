@@ -19,9 +19,12 @@
     <section class="block">
         <h2>① 写真CSVファイルを選択</h2>
 
-        <!-- app.js が要求する ID に修正 -->
-        <input type="file" id="exifFile" accept=".csv" />
-        <p id="status" class="status">未選択</p>
+        <!-- app.js が要求する ID -->
+        <input type="file" id="exifFile" accept=".csv"
+            onchange="document.getElementById('exifStatus').textContent = this.files[0]?.name ?? '未選択';">
+
+        <!-- ファイル選択状態を表示する要素を追加 -->
+        <p id="exifStatus" class="status">未選択</p>
     </section>
 
     <!-- ===============================
@@ -31,7 +34,10 @@
         <h2>② メモTXTファイルを選択</h2>
 
         <!-- app.js が要求する ID -->
-        <input type="file" id="memoFile" accept=".txt" />
+        <input type="file" id="memoFile" accept=".txt"
+            onchange="document.getElementById('memoStatus').textContent = this.files[0]?.name ?? '未選択';">
+
+        <p id="memoStatus" class="status">未選択</p>
     </section>
 
     <!-- ===============================
@@ -48,10 +54,28 @@
 
         <fieldset class="modeBox">
             <legend>判定方式</legend>
-            <!-- app.js の matchMode に合わせる -->
-            <label><input type="radio" name="matchMode" value="OR" checked> OR（距離 or 時間）</label><br>
-            <label><input type="radio" name="matchMode" value="AND"> AND（距離 and 時間）</label>
+
+            <label>
+                <input type="radio" name="matchMode" value="OR" checked>
+                OR（距離 or 時間）
+            </label><br>
+
+            <label>
+                <input type="radio" name="matchMode" value="AND">
+                AND（距離 and 時間）
+            </label>
         </fieldset>
+
+        <!-- ★ app.js が参照する ignoreDistance / ignoreTime を追加 -->
+        <label>
+            <input type="checkbox" id="ignoreDistance">
+            距離判定を無視する
+        </label><br>
+
+        <label>
+            <input type="checkbox" id="ignoreTime">
+            時間判定を無視する
+        </label>
 
         <h3>期間指定</h3>
         <label>開始日</label><input type="date" id="startDate" />
@@ -76,9 +100,14 @@
          =============================== -->
     <section class="block">
         <h2>④ 出力</h2>
-        <a id="downloadLink" class="downloadLink" href="#" download="matched.csv" style="display:none;">
+
+        <a id="downloadLink" class="downloadLink"
+           href="#" download="matched.csv" style="display:none;">
             👉 CSVをダウンロード
         </a>
+
+        <!-- app.js が利用するステータス表示領域 -->
+        <p id="status" class="status"></p>
     </section>
 
 </body>
