@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>05 PictureMemoMuch Web</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="libs/papaparse.min.js"></script>
+    <script defer src="app.js"></script>
+</head>
+
+<body>
+
+    <h1>PictureMemoMuch（Web版）</h1>
+
+    <!-- ===============================
+         1. 写真CSVアップロード
+         =============================== -->
+    <section class="block">
+        <h2>① 写真CSVファイルを選択</h2>
+
+        <input type="file" id="csvInput" accept=".csv" />
+        <p id="csvStatus" class="status">未選択</p>
+    </section>
+
+    <!-- ===============================
+         2. メモTXTアップロード
+         =============================== -->
+    <section class="block">
+        <h2>② メモTXTファイルを選択</h2>
+
+        <input type="file" id="txtInput" accept=".txt" />
+        <p id="txtStatus" class="status">未選択</p>
+    </section>
+
+    <!-- ===============================
+         3. マッチング設定
+         =============================== -->
+    <section class="block">
+        <h2>③ マッチング設定</h2>
+
+        <label>距離しきい値（m）</label>
+        <input type="number" id="distThreshold" value="20" />
+
+        <label>時間しきい値（秒）</label>
+        <input type="number" id="timeThreshold" value="300" />
+
+        <fieldset class="modeBox">
+            <legend>判定方式</legend>
+            <label><input type="radio" name="mode" value="OR" checked> OR（距離 or 時間）</label><br>
+            <label><input type="radio" name="mode" value="AND"> AND（距離 and 時間）</label>
+        </fieldset>
+    </section>
+
+    <!-- ===============================
+         4. 実行ボタン
+         =============================== -->
+    <section class="block">
+        <button id="runButton" class="mainButton">マッチングを実行</button>
+        <p id="runStatus" class="runStatus"></p>
+    </section>
+
+    <!-- ===============================
+         5. 出力
+         =============================== -->
+    <section class="block">
+        <h2>④ 出力</h2>
+        <a id="downloadLink" class="downloadLink" href="#" download="matched.csv" style="display:none;">
+            👉 CSVをダウンロード
+        </a>
+    </section>
+
+</body>
+</html>
