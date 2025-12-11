@@ -121,13 +121,13 @@
       })
       .join(",");
   }
+
   // ============================================================
   // 日付/時刻処理（※完全修正版）
   // ============================================================
   function parseDateTime(str) {
     if (!str) return null;
 
-    // ★ 不可視文字・全角スペース・連続スペース除去
     str = str
       .replace(/\u3000/g, " ")
       .replace(/\s+/g, " ")
@@ -147,7 +147,6 @@
 
     const dt = new Date(y, M, d, hh, mm, ss);
 
-    // ★ NaN 対策：Invalid Date は null 扱い
     if (isNaN(dt.getTime())) return null;
 
     return dt;
@@ -208,7 +207,7 @@
   }
 
   // ============================================================
-  // メモTXT 読み込み（※修正版）
+  // メモTXT 読み込み（※ 複数ファイル＋MMDD付与に拡張）
   // ============================================================
   function parseMemoTxt(text) {
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
@@ -226,7 +225,7 @@
         const rest = line.substring(idx + 3).trim();
 
         const dt = parseDateTime(timeStr);
-        if (!dt) continue;  // ★ ここが非常に重要：無効な日時は必ず除外
+        if (!dt) continue;
 
         const latPos = rest.lastIndexOf("(lat:");
         if (latPos === -1) continue;
@@ -262,6 +261,7 @@
           lat: latVal,
           lng: lngVal,
           text: textPart,
+          MMDD: null   // ★後で付与
         });
       } catch (e) {
         // 無視
@@ -316,6 +316,7 @@
 
     let exifSeq = 1;
     let memoSeq = 1;
+
     // ------------ Exif → Memo ここから ------------
     for (let i = 0; i < exifRows.length; i++) {
       const row = exifRows[i];
@@ -340,7 +341,6 @@
           continue;
         }
 
-        // ---------- ★ 修正版 timeOk ----------
         let timeOk = true;
         if (!ignoreTime) {
           const ex = exifTime.getTime();
@@ -354,7 +354,6 @@
           }
         }
 
-        // ---------- 距離チェック ----------
         let distanceChecked = false;
         let distanceOk = false;
 
@@ -374,7 +373,6 @@
           }
         }
 
-        // ---------- マッチ判定（AND/OR） ----------
         let isMatch;
         if (matchMode === "AND") {
           if (distanceChecked) {
@@ -444,7 +442,6 @@
         if (!exifTime) continue;
         if (exifTime < startDt || exifTime > endDt) continue;
 
-        // ---------- ★ 修正版 timeOk ----------
         let timeOk = true;
         if (!ignoreTime) {
           const ex = exifTime.getTime();
@@ -510,7 +507,10 @@
 
       if (flg === "1") memoMatchedCount++;
 
-      const newFname = `m${memoSeq.toString().padStart(3, "0")}-${flg}`;
+      // ★ 新ルール: M + MMDD + "_" + Seq(3桁) + "-" + Flag
+      const MMDD = memo.MMDD || "0000";
+      const newFname = `M${MMDD}_${memoSeq.toString().padStart(3, "0")}-${flg}`;
+
       const exifPart = matchedExifNames.join("/");
       const memoCol = `【${exifPart}】${memo.text}`;
 
@@ -564,24 +564,50 @@
       }
 
       const exifFile = exifFileInput.files[0];
-      const memoFile = memoFileInput.files[0];
+      const memoFiles = memoFileInput.files;
 
       if (!exifFile) {
         alert("Exif CSV ファイルを選択してください。");
         return;
       }
-      if (!memoFile) {
+      if (!memoFiles || memoFiles.length === 0) {
         alert("メモTXT ファイルを選択してください。");
         return;
       }
 
-      const [exifText, memoText] = await Promise.all([
-        readFileAsText(exifFile),
-        readFileAsText(memoFile),
-      ]);
-
+      // Exif 読み込み
+      const exifText = await readFileAsText(exifFile);
       const exifCsv = parseCsv(exifText);
-      const memoEntries = parseMemoTxt(memoText);
+
+      // メモ複数読み込み
+      let memoEntries = [];
+
+      for (const f of memoFiles) {
+        const txt = await readFileAsText(f);
+        const entries = parseMemoTxt(txt);
+
+        // ファイル名から MMDD を付与
+        const fname = f.name;
+        const year = fname.substring(0, 4);
+        const idx = fname.indexOf("_");
+        let MMDD = null;
+
+        if (idx !== -1) {
+          const tail = fname.substring(idx + 1);
+          const m = tail.match(/(\d{1,2})月(\d{1,2})日/);
+          if (m) {
+            const MM = m[1].padStart(2, "0");
+            const DD = m[2].padStart(2, "0");
+            MMDD = MM + DD;
+          }
+        }
+
+        for (const e of entries) {
+          e.MMDD = MMDD;
+        }
+
+        memoEntries = memoEntries.concat(entries);
+      }
 
       const distThresholdM = parseFloat($("distInput").value.trim());
       const timeThresholdSec = parseFloat($("timeInput").value.trim());
@@ -695,27 +721,37 @@
     const memoInput = $("memoFile");
     if (memoInput) {
       memoInput.addEventListener("change", () => {
-        const file = memoInput.files[0];
-        if (!file) return;
+        const files = memoInput.files;
+        if (!files || files.length === 0) return;
 
-        const fname = file.name;
+        let dates = [];
 
-        const year = fname.substring(0, 4);
-        const idx = fname.indexOf("_");
-        if (idx === -1) return;
+        for (const f of files) {
+          const fname = f.name;
+          const year = fname.substring(0, 4);
+          const idx = fname.indexOf("_");
+          if (idx === -1) continue;
 
-        const tail = fname.substring(idx + 1);
+          const tail = fname.substring(idx + 1);
+          const m = tail.match(/(\d{1,2})月(\d{1,2})日/);
+          if (!m) continue;
 
-        const m = tail.match(/(\d{1,2})月(\d{1,2})日/);
-        if (!m) return;
+          const MM = m[1].padStart(2, "0");
+          const DD = m[2].padStart(2, "0");
+          const dateStr = `${year}-${MM}-${DD}`;
 
-        const MM = m[1].padStart(2, "0");
-        const DD = m[2].padStart(2, "0");
+          dates.push(new Date(dateStr));
+        }
 
-        const dateStr = `${year}-${MM}-${DD}`;
+        if (dates.length === 0) return;
 
-        $("startDate").value = dateStr;
-        $("endDate").value = dateStr;
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+
+        const pad2 = (n) => (n < 10 ? "0" + n : "" + n);
+
+        $("startDate").value = `${minDate.getFullYear()}-${pad2(minDate.getMonth() + 1)}-${pad2(minDate.getDate())}`;
+        $("endDate").value = `${maxDate.getFullYear()}-${pad2(maxDate.getMonth() + 1)}-${pad2(maxDate.getDate())}`;
 
         $("startHour").value = "00";
         $("startMin").value = "00";
