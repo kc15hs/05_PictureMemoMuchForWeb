@@ -12,6 +12,7 @@
 //  #runButton, #status, #downloadLink
 
 (function () {
+
   // ============================================================
   // 汎用：DOM ヘルパ
   // ============================================================
@@ -45,16 +46,20 @@
 
     const header = parseCsvLine(lines[0]);
     const rows = [];
+
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
+
       const cols = parseCsvLine(line);
       const row = {};
+
       for (let j = 0; j < header.length; j++) {
         row[header[j]] = cols[j] !== undefined ? cols[j] : "";
       }
       rows.push(row);
     }
+
     return { header, rows };
   }
 
@@ -65,6 +70,7 @@
 
     for (let i = 0; i < line.length; i++) {
       const ch = line[i];
+
       if (inQuotes) {
         if (ch === '"') {
           if (i + 1 < line.length && line[i + 1] === '"') {
@@ -87,6 +93,7 @@
         }
       }
     }
+
     result.push(cur);
     return result;
   }
@@ -94,10 +101,12 @@
   function toCsv(header, rows) {
     const lines = [];
     lines.push(csvLine(header));
+
     for (const row of rows) {
-      const cols = header.map((h) => row[h] !== undefined ? String(row[h]) : "");
+      const cols = header.map(h => row[h] !== undefined ? String(row[h]) : "");
       lines.push(csvLine(cols));
     }
+
     return lines.join("\r\n");
   }
 
@@ -105,33 +114,49 @@
     return cols
       .map((v) => {
         const s = String(v ?? "");
-        if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+        if (/[",\r\n]/.test(s)) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
         return s;
       })
       .join(",");
   }
-
   // ============================================================
-  // 日付/時刻処理
+  // 日付/時刻処理（※完全修正版）
   // ============================================================
   function parseDateTime(str) {
     if (!str) return null;
+
+    // ★ 不可視文字・全角スペース・連続スペース除去
+    str = str
+      .replace(/\u3000/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
     const m = str.match(
-      /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/
+      /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/
     );
     if (!m) return null;
+
     const y = parseInt(m[1], 10);
     const M = parseInt(m[2], 10) - 1;
     const d = parseInt(m[3], 10);
     const hh = parseInt(m[4], 10);
     const mm = parseInt(m[5], 10);
     const ss = m[6] ? parseInt(m[6], 10) : 0;
-    return new Date(y, M, d, hh, mm, ss);
+
+    const dt = new Date(y, M, d, hh, mm, ss);
+
+    // ★ NaN 対策：Invalid Date は null 扱い
+    if (isNaN(dt.getTime())) return null;
+
+    return dt;
   }
 
   function formatDateTime(dt) {
     if (!dt) return "";
     const pad2 = (n) => (n < 10 ? "0" + n : "" + n);
+
     return (
       dt.getFullYear() +
       "-" +
@@ -153,15 +178,19 @@
   function haversine(lat1, lon1, lat2, lon2) {
     const R = 6378137;
     const toRad = (x) => (x * Math.PI) / 180;
+
     lat1 = toRad(lat1);
     lon1 = toRad(lon1);
     lat2 = toRad(lat2);
     lon2 = toRad(lon2);
+
     const dlat = lat2 - lat1;
     const dlon = lon2 - lon1;
+
     const a =
       Math.sin(dlat / 2) ** 2 +
       Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) ** 2;
+
     return R * 2 * Math.asin(Math.sqrt(a));
   }
 
@@ -179,11 +208,12 @@
   }
 
   // ============================================================
-  // メモTXT 読み込み
+  // メモTXT 読み込み（※修正版）
   // ============================================================
   function parseMemoTxt(text) {
     const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
     const entries = [];
+
     for (const rawLine of lines) {
       const line = rawLine.trim();
       if (!line) continue;
@@ -191,11 +221,12 @@
       try {
         const idx = line.indexOf(" - ");
         if (idx === -1) continue;
-        const timeStr = line.substring(0, idx);
-        const rest = line.substring(idx + 3);
+
+        const timeStr = line.substring(0, idx).trim();
+        const rest = line.substring(idx + 3).trim();
 
         const dt = parseDateTime(timeStr);
-        if (!dt) continue;
+        if (!dt) continue;  // ★ ここが非常に重要：無効な日時は必ず除外
 
         const latPos = rest.lastIndexOf("(lat:");
         if (latPos === -1) continue;
@@ -203,11 +234,9 @@
         const textPart = rest.substring(0, latPos).trim();
         const coordPart = rest.substring(latPos).trim();
 
-        let coordInner;
+        let coordInner = coordPart;
         if (coordPart.startsWith("(") && coordPart.endsWith(")")) {
           coordInner = coordPart.substring(1, coordPart.length - 1);
-        } else {
-          coordInner = coordPart;
         }
 
         let latVal = null;
@@ -234,13 +263,16 @@
           lng: lngVal,
           text: textPart,
         });
-      } catch (e) {}
+      } catch (e) {
+        // 無視
+      }
     }
+
     return entries;
   }
 
   // ============================================================
-  // マッチング処理
+  // マッチング処理（前半）
   // ============================================================
   function matchAndFillJs(
     exifHeader,
@@ -263,14 +295,14 @@
       "LocalURL",
       "Memo",
     ];
+
     for (const c of requiredCols) {
       if (!exifHeader.includes(c)) {
         throw new Error(`Exif CSV に列 '${c}' がありません。`);
       }
     }
 
-    const exifRowCount = exifRows.length;
-    if (exifRowCount === 0) {
+    if (exifRows.length === 0) {
       throw new Error("Exif CSV にデータがありません。");
     }
 
@@ -284,8 +316,7 @@
 
     let exifSeq = 1;
     let memoSeq = 1;
-
-    // ------------ Exif → Memo ------------
+    // ------------ Exif → Memo ここから ------------
     for (let i = 0; i < exifRows.length; i++) {
       const row = exifRows[i];
       const exifTime = exifTimes[i];
@@ -300,21 +331,30 @@
       const matchedMemoSeq = [];
 
       let curMseq = 1;
+
       for (const memo of memoEntries) {
         const memoTime = memo.time;
+
         if (memoTime < startDt || memoTime > endDt) {
-          curMseq += 1;
+          curMseq++;
           continue;
         }
 
+        // ---------- ★ 修正版 timeOk ----------
         let timeOk = true;
         if (!ignoreTime) {
-          const deltaSec = Math.abs(
-            (exifTime.getTime() - memoTime.getTime()) / 1000
-          );
-          timeOk = deltaSec <= timeThresholdSec;
+          const ex = exifTime.getTime();
+          const me = memoTime.getTime();
+
+          if (isNaN(ex) || isNaN(me)) {
+            timeOk = false;
+          } else {
+            const deltaSec = Math.abs((ex - me) / 1000);
+            timeOk = deltaSec <= timeThresholdSec;
+          }
         }
 
+        // ---------- 距離チェック ----------
         let distanceChecked = false;
         let distanceOk = false;
 
@@ -329,14 +369,12 @@
             distanceOk = dist <= distThresholdM;
             distanceChecked = true;
           } else {
-            distanceOk = false;
             distanceChecked = false;
+            distanceOk = false;
           }
-        } else {
-          distanceOk = false;
-          distanceChecked = false;
         }
 
+        // ---------- マッチ判定（AND/OR） ----------
         let isMatch;
         if (matchMode === "AND") {
           if (distanceChecked) {
@@ -353,13 +391,14 @@
         }
 
         if (!isMatch) {
-          curMseq += 1;
+          curMseq++;
           continue;
         }
 
         matchedTexts.push(memo.text);
         matchedMemoSeq.push(curMseq.toString().padStart(3, "0"));
-        curMseq += 1;
+
+        curMseq++;
       }
 
       const flg = matchedTexts.length > 0 ? "1" : "0";
@@ -371,47 +410,51 @@
 
       if (matchedTexts.length > 0) {
         const seqPart = matchedMemoSeq.join("/");
+
         const bodyList = [];
         for (let k = 0; k < matchedTexts.length; k++) {
-          const s = matchedMemoSeq[k];
-          const t = matchedTexts[k];
-          bodyList.push(`(${s})${t}`);
+          bodyList.push(`(${matchedMemoSeq[k]})${matchedTexts[k]}`);
         }
         const bodyPart = bodyList.join(" / ");
 
         row["Memo"] = `【${seqPart}】${bodyPart}`;
-        matchedExifCount += 1;
+        matchedExifCount++;
       } else {
         row["Memo"] = "";
       }
     }
 
-    // ------------ Memo → Exif（メモ行生成） ------------
+    // ------------ Memo → Exif ここから ------------
     const memoRows = [];
 
     for (const memo of memoEntries) {
       const memoTime = memo.time;
-
       if (memoTime < startDt || memoTime > endDt) {
-        memoSeq += 1;
+        memoSeq++;
         continue;
       }
 
-      const matchedExifNames = [];
+      let matchedExifNames = [];
       let flg = "0";
 
       for (let i = 0; i < exifRows.length; i++) {
         const row = exifRows[i];
         const exifTime = exifTimes[i];
+
         if (!exifTime) continue;
         if (exifTime < startDt || exifTime > endDt) continue;
 
+        // ---------- ★ 修正版 timeOk ----------
         let timeOk = true;
         if (!ignoreTime) {
-          const deltaSec = Math.abs(
-            (exifTime.getTime() - memoTime.getTime()) / 1000
-          );
-          timeOk = deltaSec <= timeThresholdSec;
+          const ex = exifTime.getTime();
+          const me = memoTime.getTime();
+          if (isNaN(ex) || isNaN(me)) {
+            timeOk = false;
+          } else {
+            const deltaSec = Math.abs((ex - me) / 1000);
+            timeOk = deltaSec <= timeThresholdSec;
+          }
         }
 
         const exifLat = row["Latitude"];
@@ -431,12 +474,9 @@
             distanceOk = dist <= distThresholdM;
             distanceChecked = true;
           } else {
-            distanceOk = false;
             distanceChecked = false;
+            distanceOk = false;
           }
-        } else {
-          distanceOk = false;
-          distanceChecked = false;
         }
 
         let isMatch;
@@ -468,9 +508,7 @@
         matchedExifNames.push(fnameNoext);
       }
 
-      if (flg === "1") {
-        memoMatchedCount += 1;
-      }
+      if (flg === "1") memoMatchedCount++;
 
       const newFname = `m${memoSeq.toString().padStart(3, "0")}-${flg}`;
       const exifPart = matchedExifNames.join("/");
@@ -486,7 +524,7 @@
         Memo: memoCol,
       });
 
-      memoSeq += 1;
+      memoSeq++;
     }
 
     const allRows = exifRows.concat(memoRows);
@@ -504,14 +542,14 @@
       header: requiredCols,
       rows: allRows,
       matchedExifCount,
-      exifRowCount,
+      exifRowCount: exifRows.length,
       totalMemo: memoEntries.length,
       memoMatchedCount,
     };
   }
 
   // ============================================================
-  // 実行ボタン処理
+  // ボタンクリック → 実行 onRun()
   // ============================================================
   async function onRun() {
     try {
@@ -519,13 +557,15 @@
 
       const exifFileInput = $("exifFile");
       const memoFileInput = $("memoFile");
+
       if (!exifFileInput || !memoFileInput) {
-        alert("exifFile/memoFile の input が見つかりません。HTML側IDを確認してください。");
+        alert("exifFile / memoFile の input が見つかりません。");
         return;
       }
 
       const exifFile = exifFileInput.files[0];
       const memoFile = memoFileInput.files[0];
+
       if (!exifFile) {
         alert("Exif CSV ファイルを選択してください。");
         return;
@@ -543,11 +583,9 @@
       const exifCsv = parseCsv(exifText);
       const memoEntries = parseMemoTxt(memoText);
 
-      const distStr = $("distInput").value.trim();
-      const timeStr = $("timeInput").value.trim();
+      const distThresholdM = parseFloat($("distInput").value.trim());
+      const timeThresholdSec = parseFloat($("timeInput").value.trim());
 
-      const distThresholdM = parseFloat(distStr);
-      const timeThresholdSec = parseFloat(timeStr);
       if (isNaN(distThresholdM) || isNaN(timeThresholdSec)) {
         alert("距離・時間は数値で入力してください。");
         return;
@@ -579,11 +617,11 @@
         return;
       }
       if (startDt > endDt) {
-        alert("開始日時は終了より前にしてください。");
+        alert("開始日時が終了より後です。");
         return;
       }
 
-      showStatus("マッチング処理中...");
+      showStatus("マッチング中...");
 
       const result = matchAndFillJs(
         exifCsv.header,
@@ -617,14 +655,11 @@
 
       const DD = Math.round(distThresholdM);
       const TT = Math.round(timeThresholdSec);
+
       const ddtt =
         matchMode === "AND"
-          ? `${DD.toString().padStart(2, "0")}and${TT
-              .toString()
-              .padStart(2, "0")}`
-          : `${DD.toString().padStart(2, "0")}or${TT
-              .toString()
-              .padStart(2, "0")}`;
+          ? `${DD.toString().padStart(2, "0")}and${TT.toString().padStart(2, "0")}`
+          : `${DD.toString().padStart(2, "0")}or${TT.toString().padStart(2, "0")}`;
 
       const outName = `${baseName}_${sStr}_${eStr}_${ddtt}.csv`;
 
@@ -653,11 +688,10 @@
   }
 
   // ============================================================
-  // イベント登録（メモTXT 選択時に日付自動設定を追加）
+  // イベント登録（メモTXT選択 → 日付自動セット）
   // ============================================================
   window.addEventListener("DOMContentLoaded", () => {
 
-    // ▼▼▼ ここが今回の追加部分 ▼▼▼
     const memoInput = $("memoFile");
     if (memoInput) {
       memoInput.addEventListener("change", () => {
@@ -666,16 +700,12 @@
 
         const fname = file.name;
 
-        // 年：先頭4桁
         const year = fname.substring(0, 4);
-
-        // アンダーバー以降「12月9日」等
         const idx = fname.indexOf("_");
         if (idx === -1) return;
 
         const tail = fname.substring(idx + 1);
 
-        // 「12月9日」形式から月日抽出
         const m = tail.match(/(\d{1,2})月(\d{1,2})日/);
         if (!m) return;
 
@@ -693,9 +723,7 @@
         $("endMin").value = "59";
       });
     }
-    // ▲▲▲ 追加終わり ▲▲▲
 
-    // 実行ボタン
     const btn = $("runButton");
     if (btn) {
       btn.addEventListener("click", (e) => {
@@ -704,4 +732,5 @@
       });
     }
   });
+
 })();
