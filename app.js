@@ -687,19 +687,30 @@
           ? `${DD.toString().padStart(2, "0")}and${TT.toString().padStart(2, "0")}`
           : `${DD.toString().padStart(2, "0")}or${TT.toString().padStart(2, "0")}`;
 
-      const outName = `${baseName}_${sStr}_${eStr}_${ddtt}.csv`;
+      // ===== ZIP出力（3CSV） =====
+      const prefix = "PhotoMemoMuch";
 
-      const csvText = toCsv(result.header, result.rows);
+      const zipName = `${prefix}_${sStr}_${eStr}_${ddtt}.zip`;
       const bom = "\uFEFF";
-      const blob = new Blob([bom + csvText], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
+
+      const csvAll   = toCsv(result.header, result.rows);
+      const csvPhoto = toCsv(result.header, exifCsv.rows);
+      const csvMemo  = toCsv(result.header, result.rows.filter(r => String(r.FileName || "").startsWith("M")));
+
+      const zip = new JSZip();
+      zip.file(`${prefix}_${sStr}_${eStr}_${ddtt}.csv`,        bom + csvAll);
+      zip.file(`${prefix}_${sStr}_${eStr}_${ddtt}_photo.csv`,  bom + csvPhoto);
+      zip.file(`${prefix}_${sStr}_${eStr}_${ddtt}_memo.csv`,   bom + csvMemo);
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
 
       const a = $("downloadLink");
       if (a) {
         a.href = url;
-        a.download = outName;
+        a.download = zipName;
         a.style.display = "inline-block";
-        a.textContent = `CSV をダウンロード (${outName})`;
+        a.textContent = `ZIP をダウンロード (${zipName})`;
       }
 
       showStatus(
