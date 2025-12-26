@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>05 PictureMemoMuch Web</title>
+
     <link rel="stylesheet" href="style.css" />
+
+    <!-- CSVパース用 -->
     <script src="libs/papaparse.min.js"></script>
+
+    <!-- ★ ZIP生成用（必須・app.jsより前） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- メインロジック -->
     <script defer src="app.js"></script>
 </head>
 
@@ -36,7 +44,6 @@
     <section class="block">
         <h2>③ マッチング設定</h2>
 
-        <!-- 距離しきい値（半分幅 + 横並び + 「距離を無視」） -->
         <div class="inlineRow">
             <label>距離しきい値（m）</label>
             <input type="number" id="distInput" class="halfInput" value="20" />
@@ -45,7 +52,6 @@
             </label>
         </div>
 
-        <!-- 時間しきい値（半分幅 + 横並び + 「時間を無視」） -->
         <div class="inlineRow">
             <label>時間しきい値（秒）</label>
             <input type="number" id="timeInput" class="halfInput" value="300" />
@@ -60,19 +66,13 @@
             <label><input type="radio" name="matchMode" value="AND"> AND（距離 and 時間）</label>
         </fieldset>
 
-        <!-- ===============================
-             期間指定（開始/終了を2行構成）
-             =============================== -->
         <h3>期間指定</h3>
 
-        <!-- 開始行 -->
         <div class="dateRow">
             <span class="dateLabel">開始</span>
             <input type="date" id="startDate" class="dateInput" />
 
-            <!-- 時 select -->
             <select id="startHour" class="timeSel">
-                <!-- 自動生成ではなくHTMLに全て書く（信頼性重視） -->
                 <option>00</option><option>01</option><option>02</option><option>03</option>
                 <option>04</option><option>05</option><option>06</option><option>07</option>
                 <option>08</option><option>09</option><option>10</option><option>11</option>
@@ -81,7 +81,6 @@
                 <option>20</option><option>21</option><option>22</option><option>23</option>
             </select>
 
-            <!-- 分 select -->
             <select id="startMin" class="timeSel">
                 <option>00</option><option>01</option><option>02</option><option>03</option>
                 <option>04</option><option>05</option><option>06</option><option>07</option>
@@ -101,7 +100,6 @@
             </select>
         </div>
 
-        <!-- 終了行 -->
         <div class="dateRow">
             <span class="dateLabel">終了</span>
             <input type="date" id="endDate" class="dateInput" />
@@ -136,20 +134,14 @@
 
     </section>
 
-    <!-- ===============================
-         4. 実行ボタン
-         =============================== -->
     <section class="block">
         <button id="runButton" class="mainButton">マッチングを実行</button>
     </section>
 
-    <!-- ===============================
-         5. 出力
-         =============================== -->
     <section class="block">
         <h2>④ 出力</h2>
-        <a id="downloadLink" class="downloadLink" href="#" download="matched.csv" style="display:none;">
-            👉 CSVをダウンロード
+        <a id="downloadLink" class="downloadLink" href="#" style="display:none;">
+            👉 ZIPをダウンロード
         </a>
     </section>
 
