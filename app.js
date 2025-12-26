@@ -694,7 +694,19 @@
       const bom = "\uFEFF";
 
       const csvAll   = toCsv(result.header, result.rows);
-      const csvPhoto = toCsv(result.header, exifCsv.rows);
+
+      // Photo CSV: DayTime 昇順でソート
+      const photoRowsSorted = [...exifCsv.rows].sort((a, b) => {
+        const da = parseDateTime(a["DayTime"]);
+        const db = parseDateTime(b["DayTime"]);
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return da - db;
+      });
+      const csvPhoto = toCsv(result.header, photoRowsSorted);
+
+      // Memo CSV（統合結果から抽出。既に DayTime ソート済み）
       const csvMemo  = toCsv(result.header, result.rows.filter(r => String(r.FileName || "").startsWith("M")));
 
       const zip = new JSZip();
